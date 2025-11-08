@@ -1,39 +1,41 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven'      // Replace with your Maven tool name
+        sonarScanner 'SonarScanner' // This must match the name in Global Tool Configuration
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                echo "Pulling code from GitHub"
+                git 'https://github.com/TaherMansourii/devsecops-demo.git'
             }
         }
 
         stage('Build') {
             steps {
-                echo 'Building... (simulate build)'
-                sh 'mkdir -p build && echo "build artifact" > build/artifact.txt'
+                sh 'mvn clean compile'
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                echo 'Running unit tests (simulate)'
-                sh 'echo "ok" > build/test-results.txt'
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_TOKEN = credentials('sonar-token') // Must match the ID of your secret token
             }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'build/**', fingerprint: true
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh "mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN"
                 }
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Pipeline finished successfully'
-        }
-        failure {
-            echo 'Pipeline failed'
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
         }
     }
 }
