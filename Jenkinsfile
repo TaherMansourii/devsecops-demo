@@ -2,40 +2,57 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven'      // Replace with your Maven tool name
-        sonarScanner 'SonarScanner' // This must match the name in Global Tool Configuration
+        maven 'Maven'   // Matches your Jenkins Maven installation
+        jdk 'JDK11'     // Matches your Jenkins JDK installation
+    }
+
+    environment {
+        SONARQUBE = 'SonarQube'  // Matches your SonarQube server name in Jenkins
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/TaherMansourii/devsecops-demo.git'
+                git branch: 'main', url: 'https://github.com/TaherMansourii/devsecops-demo.git'
             }
         }
 
         stage('Build') {
             steps {
-                sh 'mvn clean compile'
+                sh 'mvn clean package'
             }
         }
 
         stage('SonarQube Analysis') {
-            environment {
-                SONAR_TOKEN = credentials('sonar-token') // Must match the ID of your secret token
-            }
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh "mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN"
+                withSonarQubeEnv("${SONARQUBE}") {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 1, unit: 'MINUTES') {
+                // Waits for the SonarQube quality gate to complete
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Deployment stage - add your deployment steps here'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs!'
         }
     }
 }
