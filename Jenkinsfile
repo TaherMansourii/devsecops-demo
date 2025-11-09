@@ -2,18 +2,18 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven'   // Matches your Jenkins Maven installation
-        jdk 'JDK11'     // Matches your Jenkins JDK installation
+        maven 'Maven'   // Your Maven installation name in Jenkins
+        jdk 'JDK11'     // Your JDK installation name
     }
 
     environment {
-        SONARQUBE = 'SonarQube'  // Matches your SonarQube server name in Jenkins
+        SONARQUBE = 'SonarQube'  // Your SonarQube server name
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/TaherMansourii/devsecops-demo.git'
+                git branch: 'main', url: 'https://github.com/spring-projects/spring-petclinic.git'
             }
         }
 
@@ -33,7 +33,6 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                // Waits for the SonarQube quality gate to complete
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
